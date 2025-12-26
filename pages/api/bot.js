@@ -8,7 +8,7 @@ const CONFIG = {
     SYMBOLS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'LTCUSDT'],
     PRECISION: { 'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'LTCUSDT': 3 },
     LEVERAGE: 5,
-    ORDER_USDT_SIZE: 50,
+    ORDER_USDT_SIZE: 5,  // Small size for testing
     EMA_PERIOD: 200,
     RSI_PERIOD: 14,
     RSI_OVERBOUGHT: 65,
