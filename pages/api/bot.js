@@ -7,8 +7,8 @@ mongoose.set('strictQuery', false);
 const CONFIG = {
     SYMBOLS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'LTCUSDT'],
     PRECISION: { 'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'LTCUSDT': 3 },
-    LEVERAGE: 5,
-    ORDER_USDT_SIZE: 5,  // Small size for testing
+    LEVERAGE: 1,  // Temporarily set to 1 for testing to meet minimum notional
+    ORDER_USDT_SIZE: 20,  // Increased for minimum notional
     EMA_PERIOD: 200,
     RSI_PERIOD: 14,
     RSI_OVERBOUGHT: 50,  // Temporarily lowered for testing short LTC
