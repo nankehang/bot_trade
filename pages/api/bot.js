@@ -139,7 +139,14 @@ export default async function handler(req, res) {
                     await Position.deleteOne({ symbol });
                     await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${(diff * Math.abs(dbPos.quantity)).toFixed(2)} (${roe.toFixed(2)}%) | Reason: ${closeReason}`);
                     actionLog = `Closed: ${closeReason}`;
-                } else { actionLog = `Holding (${roe.toFixed(2)}%)`; }
+                } else { 
+                    // ถ้าติดลบแต่ยังไม่หลุด EMA
+                    if (roe <= CONFIG.SL_PERCENT && !closeReason) {
+                        actionLog = `Flex Holding (${roe.toFixed(2)}% - Trend OK)`;
+                    } else {
+                        actionLog = `Holding (${roe.toFixed(2)}%)`; 
+                    }
+                }
             } else {
                 const currentPositions = await Position.countDocuments({});
                 if (currentPositions >= CONFIG.MAX_POSITIONS) {
