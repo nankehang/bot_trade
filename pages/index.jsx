@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Script from 'next/script';
 
 const Home = () => {
   const [data, setData] = useState({
@@ -25,8 +26,15 @@ const Home = () => {
     <div className="min-h-screen bg-[#0f172a] text-white p-4 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
         <header className="bg-[#1e293b] p-6 rounded-2xl border border-yellow-500/30 shadow-2xl">
-          <h1 className="text-3xl font-black text-yellow-500 italic uppercase">🚀 Multi-Coin Bot Dashboard</h1>
-          <p className="text-gray-400 text-xs mt-1">BTC, ETH, BNB, LTC | 15m Trend + 4h Filter + Trailing Stop</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-black text-yellow-500 italic uppercase">🚀 Multi-Coin Bot Dashboard</h1>
+              <p className="text-gray-400 text-xs mt-1">BTC, ETH, BNB, LTC | 15m Trend + 4h Filter + Trailing Stop</p>
+            </div>
+            <a href="https://youtu.be/TYYyUvJYuH0" target="_blank" rel="noopener noreferrer" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition">
+              📺 Follow on YouTube
+            </a>
+          </div>
         </header>
 
         {/* Market Cards */}
@@ -86,6 +94,18 @@ const Home = () => {
           </div>
         </div>
       </div>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+        `}
+      </Script>
     </div>
   );
 };
