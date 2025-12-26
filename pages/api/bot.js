@@ -22,7 +22,8 @@ const CONFIG = {
     TS_TRIGGER_1: 5.0, TS_TRIGGER_2: 12.0, TS_TRIGGER_3: 20.0,
     TS_CALLBACK_ATR_MULTIPLIER: 2.5,
     TP_PERCENT: 5,  // ลดเป็น 5% เพื่อกำไร ~5 USD ต่อเทรด
-    SL_PERCENT: -2,  // ลดเป็น -2% เพื่อขาดทุน ~2 USD ต่อเทรด
+    SL_PERCENT: -2,  // Flexible SL ที่ -2%
+    MAX_PAIN_PERCENT: -10,  // Hard safety net ที่ -10%
 };
 
 const Trade = mongoose.models.Trade || mongoose.model('Trade', new mongoose.Schema({
@@ -116,8 +117,15 @@ export default async function handler(req, res) {
                 if (roe > dbPos.highestPnL) { dbPos.highestPnL = roe; await dbPos.save(); }
 
                 let closeReason = '';
-                if (roe <= CONFIG.SL_PERCENT) closeReason = "⛔ SL";
-                else if (roe >= CONFIG.TP_PERCENT) closeReason = "✅ TP";
+                if (roe <= CONFIG.MAX_PAIN_PERCENT) closeReason = "⛔ Max Pain SL";
+                else if (roe <= CONFIG.SL_PERCENT) {
+                    // Flexible SL: Check if trend is intact
+                    if ((dbPos.type === 'BUY' && currentPrice > ema) || (dbPos.type === 'SELL' && currentPrice < ema)) {
+                        // Trend intact, do not close
+                    } else {
+                        closeReason = "⛔ Trend Reversal SL";
+                    }
+                } else if (roe >= CONFIG.TP_PERCENT) closeReason = "✅ TP";
                 else if (CONFIG.USE_TRAILING_STOP) {
                     const cb = (atr / currentPrice) * 100 * CONFIG.TS_CALLBACK_ATR_MULTIPLIER;
                     if (roe >= CONFIG.TS_TRIGGER_1 && dbPos.trailingLevel < 1) { dbPos.trailingLevel = 1; await dbPos.save(); }
