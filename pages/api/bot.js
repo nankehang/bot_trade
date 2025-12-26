@@ -7,12 +7,12 @@ mongoose.set('strictQuery', false);
 const CONFIG = {
     SYMBOLS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'LTCUSDT'],
     PRECISION: { 'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'LTCUSDT': 3 },
-    LEVERAGE: 1,  // ลดลงเพื่อลดความเสี่ยง
-    ORDER_USDT_SIZE: 5,  // ลดขนาดออเดอร์เพื่อความปลอดภัย
-    MAX_POSITIONS: 1,  // จำกัดตำแหน่งเปิดพร้อมกันสูงสุด 1 ตำแหน่ง
+    LEVERAGE: 1,  // ยังใช้ 1 เพื่อความปลอดภัยสูงสุด
+    ORDER_USDT_SIZE: 100,  // เพิ่มเป็น 100 USDT ตามงบของคุณ (margin ~100 USD)
+    MAX_POSITIONS: 1,  // ยังจำกัด 1 ตำแหน่ง
     EMA_PERIOD: 200,
     RSI_PERIOD: 14,
-    RSI_OVERBOUGHT: 65,  // ปรับให้เข้มงวดน้อยลงเพื่อลดการเทรดบ่อย
+    RSI_OVERBOUGHT: 65,
     RSI_OVERSOLD: 35,
     USE_BIG_TREND: true,
     USE_ATR_FILTER: true,
@@ -21,8 +21,8 @@ const CONFIG = {
     USE_TRAILING_STOP: true,
     TS_TRIGGER_1: 5.0, TS_TRIGGER_2: 12.0, TS_TRIGGER_3: 20.0,
     TS_CALLBACK_ATR_MULTIPLIER: 2.5,
-    TP_PERCENT: 50,  // ลด TP เพื่อปิดกำไรเร็ว
-    SL_PERCENT: -10,  // ลด SL เพื่อป้องกันขาดทุนน้อยลง
+    TP_PERCENT: 5,  // ลดเป็น 5% เพื่อกำไร ~5 USD ต่อเทรด
+    SL_PERCENT: -2,  // ลดเป็น -2% เพื่อขาดทุน ~2 USD ต่อเทรด
 };
 
 const Trade = mongoose.models.Trade || mongoose.model('Trade', new mongoose.Schema({
