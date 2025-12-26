@@ -7,12 +7,13 @@ mongoose.set('strictQuery', false);
 const CONFIG = {
     SYMBOLS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'LTCUSDT'],
     PRECISION: { 'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'LTCUSDT': 3 },
-    LEVERAGE: 10,
-    ORDER_USDT_SIZE: 10,
+    LEVERAGE: 1,  // ลดลงเพื่อลดความเสี่ยง
+    ORDER_USDT_SIZE: 5,  // ลดขนาดออเดอร์เพื่อความปลอดภัย
+    MAX_POSITIONS: 1,  // จำกัดตำแหน่งเปิดพร้อมกันสูงสุด 1 ตำแหน่ง
     EMA_PERIOD: 200,
     RSI_PERIOD: 14,
-    RSI_OVERBOUGHT: 69,
-    RSI_OVERSOLD: 31,
+    RSI_OVERBOUGHT: 65,  // ปรับให้เข้มงวดน้อยลงเพื่อลดการเทรดบ่อย
+    RSI_OVERSOLD: 35,
     USE_BIG_TREND: true,
     USE_ATR_FILTER: true,
     ATR_PERIOD: 14,
@@ -20,7 +21,8 @@ const CONFIG = {
     USE_TRAILING_STOP: true,
     TS_TRIGGER_1: 5.0, TS_TRIGGER_2: 12.0, TS_TRIGGER_3: 20.0,
     TS_CALLBACK_ATR_MULTIPLIER: 2.5,
-    TP_PERCENT: 100, SL_PERCENT: -20,
+    TP_PERCENT: 50,  // ลด TP เพื่อปิดกำไรเร็ว
+    SL_PERCENT: -10,  // ลด SL เพื่อป้องกันขาดทุนน้อยลง
 };
 
 const Trade = mongoose.models.Trade || mongoose.model('Trade', new mongoose.Schema({
@@ -131,17 +133,22 @@ export default async function handler(req, res) {
                     actionLog = `Closed: ${closeReason}`;
                 } else { actionLog = `Holding (${roe.toFixed(2)}%)`; }
             } else {
-                let signal = (currentPrice > ema && rsi < CONFIG.RSI_OVERSOLD) ? 'BUY' : (currentPrice < ema && rsi > CONFIG.RSI_OVERBOUGHT) ? 'SELL' : 'NONE';
-                if (signal !== 'NONE' && CONFIG.USE_BIG_TREND && ((signal === 'BUY' && currentPrice < ema4h) || (signal === 'SELL' && currentPrice > ema4h))) signal = 'NONE';
-                if (signal !== 'NONE' && CONFIG.USE_ATR_FILTER && atr < (CONFIG.ATR_THRESHOLD[symbol] || 0)) signal = 'NONE';
+                const currentPositions = await Position.countDocuments({});
+                if (currentPositions >= CONFIG.MAX_POSITIONS) {
+                    actionLog = 'Max positions reached ⏸️';
+                } else {
+                    let signal = (currentPrice > ema && rsi < CONFIG.RSI_OVERSOLD) ? 'BUY' : (currentPrice < ema && rsi > CONFIG.RSI_OVERBOUGHT) ? 'SELL' : 'NONE';
+                    if (signal !== 'NONE' && CONFIG.USE_BIG_TREND && ((signal === 'BUY' && currentPrice < ema4h) || (signal === 'SELL' && currentPrice > ema4h))) signal = 'NONE';
+                    if (signal !== 'NONE' && CONFIG.USE_ATR_FILTER && atr < (CONFIG.ATR_THRESHOLD[symbol] || 0)) signal = 'NONE';
 
-                if (signal !== 'NONE') {
-                    const qty = (CONFIG.ORDER_USDT_SIZE / currentPrice).toFixed(CONFIG.PRECISION[symbol]);
-                    const order = await binanceRequest('/fapi/v1/order', 'POST', { symbol, side: signal, type: 'MARKET', quantity: qty });
-                    if (order.orderId) {
-                        await Position.create({ symbol, type: signal, entryPrice: currentPrice, quantity: parseFloat(qty) });
-                        await sendTelegram(`🚀 Opened ${signal} ${symbol} | Qty: ${qty} | Price: $${currentPrice.toFixed(2)}`);
-                        actionLog = `Opened ${signal}`;
+                    if (signal !== 'NONE') {
+                        const qty = (CONFIG.ORDER_USDT_SIZE / currentPrice).toFixed(CONFIG.PRECISION[symbol]);
+                        const order = await binanceRequest('/fapi/v1/order', 'POST', { symbol, side: signal, type: 'MARKET', quantity: qty });
+                        if (order.orderId) {
+                            await Position.create({ symbol, type: signal, entryPrice: currentPrice, quantity: parseFloat(qty) });
+                            await sendTelegram(`🚀 Opened ${signal} ${symbol} | Qty: ${qty} | Price: $${currentPrice.toFixed(2)}`);
+                            actionLog = `Opened ${signal}`;
+                        }
                     }
                 }
             }
