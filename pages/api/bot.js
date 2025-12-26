@@ -32,11 +32,23 @@ const Position = mongoose.models.Position || mongoose.model('Position', new mong
     type: String, entryPrice: Number, quantity: Number, highestPnL: { type: Number, default: 0 }, trailingLevel: { type: Number, default: 0 }
 }));
 
+const BINANCE_BASE_URL = process.env.DEMO === 'true' ? 'https://testnet.binancefuture.com' : 'https://fapi.binance.com';
+
+const sendTelegram = async (message) => {
+    if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) return;
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: message })
+    });
+};
+
 const binanceRequest = async (endpoint, method = 'GET', params = {}) => {
     const timestamp = Date.now();
     const queryString = new URLSearchParams({ ...params, timestamp, recvWindow: 60000 }).toString();
     const signature = crypto.createHmac('sha256', process.env.BINANCE_API_SECRET).update(queryString).digest('hex');
-    const url = `https://fapi.binance.com${endpoint}?${queryString}&signature=${signature}`;
+    const url = `${BINANCE_BASE_URL}${endpoint}?${queryString}&signature=${signature}`;
     const response = await fetch(url, { method, headers: { 'X-MBX-APIKEY': process.env.BINANCE_API_KEY } });
     if (!response.ok) {
         const error = await response.json();
@@ -91,6 +103,7 @@ export default async function handler(req, res) {
                 const roe = (diff / dbPos.entryPrice) * 100 * CONFIG.LEVERAGE;
                 await Trade.create({ date: new Date().toISOString(), symbol, type: dbPos.type, entryPrice: dbPos.entryPrice, closePrice: currentPrice, profit: diff * Math.abs(dbPos.quantity), roe, reason: "🙌 Manual Close" });
                 await Position.deleteOne({ symbol });
+                await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${(diff * Math.abs(dbPos.quantity)).toFixed(2)} (${roe.toFixed(2)}%) | Reason: Manual Close`);
                 dbPos = null;
             }
 
@@ -114,6 +127,7 @@ export default async function handler(req, res) {
                     await binanceRequest('/fapi/v1/order', 'POST', { symbol, side: dbPos.type === 'BUY' ? 'SELL' : 'BUY', type: 'MARKET', quantity: Math.abs(dbPos.quantity) });
                     await Trade.create({ date: new Date().toISOString(), symbol, type: dbPos.type, entryPrice: dbPos.entryPrice, closePrice: currentPrice, profit: diff * Math.abs(dbPos.quantity), roe, reason: closeReason });
                     await Position.deleteOne({ symbol });
+                    await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${(diff * Math.abs(dbPos.quantity)).toFixed(2)} (${roe.toFixed(2)}%) | Reason: ${closeReason}`);
                     actionLog = `Closed: ${closeReason}`;
                 } else { actionLog = `Holding (${roe.toFixed(2)}%)`; }
             } else {
@@ -126,6 +140,7 @@ export default async function handler(req, res) {
                     const order = await binanceRequest('/fapi/v1/order', 'POST', { symbol, side: signal, type: 'MARKET', quantity: qty });
                     if (order.orderId) {
                         await Position.create({ symbol, type: signal, entryPrice: currentPrice, quantity: parseFloat(qty) });
+                        await sendTelegram(`🚀 Opened ${signal} ${symbol} | Qty: ${qty} | Price: $${currentPrice.toFixed(2)}`);
                         actionLog = `Opened ${signal}`;
                     }
                 }
