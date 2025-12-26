@@ -11,7 +11,7 @@ const CONFIG = {
     ORDER_USDT_SIZE: 5,  // Small size for testing
     EMA_PERIOD: 200,
     RSI_PERIOD: 14,
-    RSI_OVERBOUGHT: 65,
+    RSI_OVERBOUGHT: 50,  // Temporarily lowered for testing short LTC
     RSI_OVERSOLD: 35,
     USE_BIG_TREND: true,
     USE_ATR_FILTER: true,
@@ -132,6 +132,8 @@ export default async function handler(req, res) {
                 } else { actionLog = `Holding (${roe.toFixed(2)}%)`; }
             } else {
                 let signal = (currentPrice > ema && rsi < CONFIG.RSI_OVERSOLD) ? 'BUY' : (currentPrice < ema && rsi > CONFIG.RSI_OVERBOUGHT) ? 'SELL' : 'NONE';
+                // Temporary test: force SELL for LTC
+                if (symbol === 'LTCUSDT' && signal === 'NONE') signal = 'SELL';
                 if (signal !== 'NONE' && CONFIG.USE_BIG_TREND && ((signal === 'BUY' && currentPrice < ema4h) || (signal === 'SELL' && currentPrice > ema4h))) signal = 'NONE';
                 if (signal !== 'NONE' && CONFIG.USE_ATR_FILTER && atr < (CONFIG.ATR_THRESHOLD[symbol] || 0)) signal = 'NONE';
 
