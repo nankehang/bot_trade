@@ -3,6 +3,58 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const CircularProgress = ({ value, size = 80, strokeWidth = 8, color = '#F59E0B' }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={strokeDasharray}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 1, ease: "easeInOut" }}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-lg font-bold text-white">{Math.round(value)}%</span>
+      </div>
+    </div>
+  );
+};
+
+const StatCard = ({ title, value, color="text-white", isProgress = false, progressValue = 0 }) => (
+  <motion.div
+    whileHover={{ scale: 1.05 }}
+    className="bg-white/10 backdrop-blur-lg p-4 rounded-xl border border-white/20 shadow-lg"
+  >
+    <p className="text-[10px] text-gray-400 uppercase font-bold mb-2">{title}</p>
+    {isProgress ? (
+      <CircularProgress value={progressValue} />
+    ) : (
+      <p className={`text-xl font-black ${color}`}>{value}</p>
+    )}
+  </motion.div>
+);
+
 const Home = () => {
   const [data, setData] = useState({
     coinsData: [], winRate: 0, totalProfitLoss: 0, balance: 0, tradeHistory: [], success: true
@@ -189,12 +241,14 @@ const Home = () => {
               <h3 className="text-lg font-bold text-yellow-500 mb-4 text-center">📈 LTC/USDT Live Chart</h3>
               <div className="w-full h-full">
                 <iframe
-                  src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=BINANCE%3ALTCUSDT&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=yourwebsite&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ALTCUSDT"
+                  src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d06&symbol=BINANCE:LTCUSDT&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc/UTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en"
                   width="100%"
                   height="100%"
                   frameBorder="0"
                   allowFullScreen
                   className="rounded-lg"
+                  title="LTC/USDT Live Trading Chart"
+                  loading="lazy"
                 ></iframe>
               </div>
             </motion.div>
@@ -238,27 +292,8 @@ const Home = () => {
           </div>
         </div>
       </div>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-        `}
-      </Script>
     </div>
   );
 };
-
-const StatCard = ({ title, value, color="text-white" }) => (
-  <div className="bg-[#1e293b] p-4 rounded-xl border border-gray-700">
-    <p className="text-[10px] text-gray-500 uppercase font-bold">{title}</p>
-    <p className={`text-xl font-black ${color}`}>{value}</p>
-  </div>
-);
 
 export default Home;
