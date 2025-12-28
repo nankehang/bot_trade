@@ -104,16 +104,32 @@ export default async function handler(req, res) {
             if (dbPos && Math.abs(realAmt) === 0) {
                 const diff = dbPos.type === 'BUY' ? (currentPrice - dbPos.entryPrice) : (dbPos.entryPrice - currentPrice);
                 const roe = (diff / dbPos.entryPrice) * 100 * CONFIG.LEVERAGE;
-                await Trade.create({ date: new Date().toISOString(), symbol, type: dbPos.type, entryPrice: dbPos.entryPrice, closePrice: currentPrice, profit: diff * Math.abs(dbPos.quantity), roe, reason: "🙌 Manual Close" });
+                const profit = diff * Math.abs(dbPos.quantity);
+                await Trade.create({ date: new Date().toISOString(), symbol, type: dbPos.type, entryPrice: dbPos.entryPrice, closePrice: currentPrice, profit, roe, reason: "🙌 Manual Close" });
                 await Position.deleteOne({ symbol });
-                await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${(diff * Math.abs(dbPos.quantity)).toFixed(2)} (${roe.toFixed(2)}%) | Reason: Manual Close`);
+                await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${profit.toFixed(2)} (${roe.toFixed(2)}%) | Reason: Manual Close`);
                 dbPos = null;
             }
 
             let actionLog = 'Wait ⏳';
+            let currentProfit = null;
+            let currentRoe = null;
             if (dbPos) {
-                const diff = dbPos.type === 'BUY' ? (currentPrice - dbPos.entryPrice) : (dbPos.entryPrice - currentPrice);
-                const roe = (diff / dbPos.entryPrice) * 100 * CONFIG.LEVERAGE;
+                let profit, roe, entryPrice;
+                if (realPos) {
+                    profit = parseFloat(realPos.unRealizedProfit);
+                    entryPrice = parseFloat(realPos.entryPrice);
+                    const positionAmtAbs = Math.abs(parseFloat(realPos.positionAmt));
+                    const margin = (entryPrice * positionAmtAbs) / CONFIG.LEVERAGE;
+                    roe = margin !== 0 ? (profit / margin) * 100 : 0;
+                } else {
+                    const diff = dbPos.type === 'BUY' ? (currentPrice - dbPos.entryPrice) : (dbPos.entryPrice - currentPrice);
+                    profit = diff * Math.abs(dbPos.quantity);
+                    roe = (diff / dbPos.entryPrice) * 100 * CONFIG.LEVERAGE;
+                    entryPrice = dbPos.entryPrice;
+                }
+                currentProfit = profit;
+                currentRoe = roe;
                 if (roe > dbPos.highestPnL) { dbPos.highestPnL = roe; await dbPos.save(); }
 
                 let closeReason = '';
@@ -135,9 +151,9 @@ export default async function handler(req, res) {
 
                 if (closeReason) {
                     await binanceRequest('/fapi/v1/order', 'POST', { symbol, side: dbPos.type === 'BUY' ? 'SELL' : 'BUY', type: 'MARKET', quantity: Math.abs(dbPos.quantity) });
-                    await Trade.create({ date: new Date().toISOString(), symbol, type: dbPos.type, entryPrice: dbPos.entryPrice, closePrice: currentPrice, profit: diff * Math.abs(dbPos.quantity), roe, reason: closeReason });
+                    await Trade.create({ date: new Date().toISOString(), symbol, type: dbPos.type, entryPrice: entryPrice, closePrice: currentPrice, profit, roe, reason: closeReason });
                     await Position.deleteOne({ symbol });
-                    await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${(diff * Math.abs(dbPos.quantity)).toFixed(2)} (${roe.toFixed(2)}%) | Reason: ${closeReason}`);
+                    await sendTelegram(`🚀 Closed ${symbol} ${dbPos.type} | Profit: $${profit.toFixed(2)} (${roe.toFixed(2)}%) | Reason: ${closeReason}`);
                     actionLog = `Closed: ${closeReason}`;
                 } else { 
                     // ถ้าติดลบแต่ยังไม่หลุด EMA
@@ -170,7 +186,8 @@ export default async function handler(req, res) {
 
             results.push({ 
                 symbol, price: currentPrice, action: actionLog, 
-                ema: ema?.toFixed(2), rsi: rsi?.toFixed(2), atr: atr?.toFixed(4), ema4h: ema4h?.toFixed(2) 
+                ema: ema?.toFixed(2), rsi: rsi?.toFixed(2), atr: atr?.toFixed(4), ema4h: ema4h?.toFixed(2),
+                profit: currentProfit?.toFixed(2), roe: currentRoe?.toFixed(2)
             });
         }
 

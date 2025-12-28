@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Host
+Host: https://yourdomain.com
+
+# Sitemaps
+Sitemap: https://yourdomain.com/sitemap.xml
