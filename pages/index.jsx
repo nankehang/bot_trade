@@ -232,26 +232,33 @@ const Home = () => {
 
           {/* Live Chart */}
           <div className="lg:col-span-1">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              className="bg-white/10 backdrop-blur-lg p-4 rounded-2xl border border-white/20 shadow-2xl h-96"
-            >
+            <div className="bg-white/10 backdrop-blur-lg p-4 rounded-2xl border border-white/20 shadow-2xl h-96">
               <h3 className="text-lg font-bold text-yellow-500 mb-4 text-center">📈 LTC/USDT Live Chart</h3>
-              <div className="w-full h-full">
+              <div className="w-full h-full overflow-hidden rounded-lg relative">
                 <iframe
-                  src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d06&symbol=BINANCE:LTCUSDT&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc/UTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en"
+                  src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d06&symbol=BINANCE%3ALTCUSDT&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en"
                   width="100%"
                   height="100%"
                   frameBorder="0"
                   allowFullScreen
-                  className="rounded-lg"
+                  className="w-full h-full"
                   title="LTC/USDT Live Trading Chart"
                   loading="lazy"
+                  style={{ transform: 'none' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextElementSibling.style.display = 'flex';
+                  }}
                 ></iframe>
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg hidden">
+                  <div className="text-center">
+                    <div className="text-yellow-500 text-2xl mb-2">📊</div>
+                    <p className="text-gray-400 text-sm">Chart temporarily unavailable</p>
+                    <p className="text-gray-500 text-xs">Please refresh the page</p>
+                  </div>
+                </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
 
