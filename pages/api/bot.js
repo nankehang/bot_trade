@@ -173,7 +173,11 @@ export default async function handler(req, res) {
                     if (signal !== 'NONE' && CONFIG.USE_ATR_FILTER && atr < (CONFIG.ATR_THRESHOLD[symbol] || 0)) signal = 'NONE';
 
                     if (signal !== 'NONE') {
-                        const qty = (CONFIG.ORDER_USDT_SIZE / currentPrice).toFixed(CONFIG.PRECISION[symbol]);
+                        let qty = (CONFIG.ORDER_USDT_SIZE / currentPrice).toFixed(CONFIG.PRECISION[symbol]);
+                        // Ensure notional >= 100 USDT to avoid Binance error
+                        while (parseFloat(qty) * currentPrice < 100) {
+                            qty = (parseFloat(qty) + Math.pow(10, -CONFIG.PRECISION[symbol])).toFixed(CONFIG.PRECISION[symbol]);
+                        }
                         const order = await binanceRequest('/fapi/v1/order', 'POST', { symbol, side: signal, type: 'MARKET', quantity: qty });
                         if (order.orderId) {
                             await Position.create({ symbol, type: signal, entryPrice: currentPrice, quantity: parseFloat(qty) });
