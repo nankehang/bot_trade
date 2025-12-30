@@ -8,8 +8,8 @@ const CONFIG = {
     SYMBOLS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'LTCUSDT'],
     PRECISION: { 'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'LTCUSDT': 3 },
     LEVERAGE: 1,  // ยังใช้ 1 เพื่อความปลอดภัยสูงสุด
-    ORDER_USDT_SIZE: 100,  // เพิ่มเป็น 100 USDT ตามงบของคุณ (margin ~100 USD)
-    MAX_POSITIONS: 1,  // ยังจำกัด 1 ตำแหน่ง
+    ORDER_USDT_SIZE: 50,  // ลดเป็น 50 USDT ตามเป้าหมายของคุณ
+    MAX_POSITIONS: 3,  // ยังจำกัด 1 ตำแหน่ง
     EMA_PERIOD: 200,
     RSI_PERIOD: 14,
     RSI_OVERBOUGHT: 65,
